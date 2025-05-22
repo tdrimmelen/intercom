@@ -6,16 +6,16 @@ from PIL import ImageFont, ImageDraw, Image
 import RPi.GPIO as GPIO
 import paho.mqtt.client as mqtt
 from signal import *
-import autopy3, os, socket, subprocess, sys, time
+import os, socket, subprocess, sys, time
 
 ##################################################################
 ########## BELTPACK USER CONFIGURATION ##########
 ### INTERCOM CONFIGURATION
 ### WHO USES THIS BELTPACK ###
-icUser = "UNKNOWN"
+icUser = "Theo"
 ### TO WHOM IS IT BROADCASTING ###
 ### THIS DEVICE HAS 2 CHANNELS ["",""] 3 CHANNELS -> ["","",""]
-icTalkTo = ["N/A","N/A"]
+icTalkTo = ["Ch1","Ch2"]
 ### MQTT SETTINGS
 mqttServer = "192.168.10.125"
 mqttPort = 8883
@@ -67,9 +67,9 @@ mqttStatus = 3
 mqttStatusCodes=["SUCCESS","INCOR PROT","INVAL CLNT","SRV UNAVAIL","BAD US/OW","NOT AUTH"]
 
 ### LOAD FONTS FOR OLED DISPLAY
-font1 = ImageFont.truetype('/home/pi/intercom/fonts/VeraMoBd.ttf',27)
-font2 = ImageFont.truetype('/home/pi/intercom/fonts/VeraMoBd.ttf',16)
-font3 = ImageFont.truetype('/home/pi/intercom/fonts/VeraMoBd.ttf',12)
+font1 = ImageFont.truetype('fonts/VeraMoBd.ttf',27)
+font2 = ImageFont.truetype('fonts/VeraMoBd.ttf',16)
+font3 = ImageFont.truetype('fonts/VeraMoBd.ttf',12)
 
 ### SETUP OLED I2C PORT
 serial = i2c(port=1, address=0x3C)
@@ -166,7 +166,8 @@ def showWiFiQuality(draw,type):
          lastNetErrState = 0
   elif type == "percent":
     ### DISPLAY WIFI QUALITY IN PERCENT
-    tmpWifiText_size = draw.textsize(str(wifiQuality)+"%", font=font2)
+    bbox = draw.textbbox((0, 0), "Intercom", font=font2)
+    tmpWifiText_size = (bbox[2] - bbox[0], bbox[3] - bbox[1])  # (width, height)
     draw.text(((64-tmpWifiText_size[0])/2, 1), str(wifiQuality)+"%", font=font2, fill=255)
     if not client.connected_flag:
       ### NETWORK PROBLEMS
@@ -178,32 +179,36 @@ def showWiFiQuality(draw,type):
         lastNetErrState = 0
 
 def startBroadcasting(btn):
-  if btn == 0:
-    autopy3.key.toggle(u'1', True, autopy3.key.MOD_CONTROL)
-    client.publish("media/intercom/broadcast/" + icUser + "/talk", ','.join(icTalkTo[btn]), qos=1, retain=True)
-  elif btn == 1:
-    autopy3.key.toggle(u'2', True, autopy3.key.MOD_CONTROL)
-    client.publish("media/intercom/broadcast/" + icUser + "/talk", ','.join(icTalkTo[btn]), qos=1, retain=True)
+  # if btn == 0:
+  #   autopy3.key.toggle(u'1', True, autopy3.key.MOD_CONTROL)
+  #   client.publish("media/intercom/broadcast/" + icUser + "/talk", ','.join(icTalkTo[btn]), qos=1, retain=True)
+  # elif btn == 1:
+  #   autopy3.key.toggle(u'2', True, autopy3.key.MOD_CONTROL)
+  #   client.publish("media/intercom/broadcast/" + icUser + "/talk", ','.join(icTalkTo[btn]), qos=1, retain=True)
   return(True)
 
 def stopBroadcasting(btn):
-  if btn == 0:
-    autopy3.key.toggle(u'1', False, autopy3.key.MOD_CONTROL)
-    client.publish("media/intercom/broadcast/" + icUser + "/talk", "NOT TALKING", qos=1, retain=True)
-  elif btn == 1:
-    autopy3.key.toggle(u'2', False, autopy3.key.MOD_CONTROL)
-    client.publish("media/intercom/broadcast/" + icUser + "/talk", "NOT TALKING", qos=1, retain=True)
+  # if btn == 0:
+  #   autopy3.key.toggle(u'1', False, autopy3.key.MOD_CONTROL)
+  #   client.publish("media/intercom/broadcast/" + icUser + "/talk", "NOT TALKING", qos=1, retain=True)
+  # elif btn == 1:
+  #   autopy3.key.toggle(u'2', False, autopy3.key.MOD_CONTROL)
+  #   client.publish("media/intercom/broadcast/" + icUser + "/talk", "NOT TALKING", qos=1, retain=True)
   return(False)
 
 def showIP(draw):
   ### DRAW DEVICE IP
   if not client.connected_flag:
-    icIPText_size=draw.textsize(deviceIP, font=font3)
+    bbox = draw.textbbox((0, 0), deviceIP, font=font3)
+    icIPText_size = (bbox[2] - bbox[0], bbox[3] - bbox[1])  # (width, height)
     draw.text(((128-icIPText_size[0])/2, 53), deviceIP, font=font3, fill=255)
-    mqttErrText_size=draw.textsize("MQTT ERR", font=font3)
+
+    bbox = draw.textbbox((0, 0), "MQTT ERR", font=font3)
+    mqttErrText_size = (bbox[2] - bbox[0], bbox[3] - bbox[1])  # (width, height)
     draw.text(((64-mqttErrText_size[0])/2+60, 6), "MQTT ERR", font=font3, fill=255)
   else:
-    icIPText_size=draw.textsize(deviceIP, font=font3)
+    bbox = draw.textbbox((0, 0), deviceIP, font=font3)
+    icIPText_size = (bbox[2] - bbox[0], bbox[3] - bbox[1])  # (width, height)
     draw.text(((128-icIPText_size[0])/2, 53), deviceIP, font=font3, fill=255)
 
 def getIPInfo():
@@ -235,19 +240,24 @@ def showICUser(draw):
   if talkNow == True:
     wifiStats = wifiStatus()
     if wifiStats[1] != "N/A":
-      tmpicUserText_size=draw.textsize("TALK TO", font=font3)
+      bbox = draw.textbbox((0, 0), "TALK TO", font=font3)
+      tmpicUserText_size = (bbox[2] - bbox[0], bbox[3] - bbox[1])  # (width, height)
       draw.text(((64-tmpicUserText_size[0])/2+60, 6), "TALK TO", font=font3, fill=255)
+
       if icTalkTo[lastBtn].find(",") != -1:
         talkTo = multiIcTalkTo(icTalkTo[lastBtn])
       else:
         talkTo = icTalkTo[lastBtn]
-      tmpicUserText_size=draw.textsize(talkTo, font=font1)
+      bbox = draw.textbbox((0, 0), talkTo, font=font1)
+      tmpicUserText_size = (bbox[2] - bbox[0], bbox[3] - bbox[1])  # (width, height)
       draw.text(((128-tmpicUserText_size[0])/2, 22), talkTo, font=font1, fill=255)
     else:
-      tmpicUserText_size=draw.textsize("NO WIFI", font=font1)
+      bbox = draw.textbbox((0, 0), "NO WIFI", font=font1)
+      tmpicUserText_size = (bbox[2] - bbox[0], bbox[3] - bbox[1])  # (width, height)
       draw.text(((128-tmpicUserText_size[0])/2, 22), "NO WIFI", font=font1, fill=255)
   else:
-    icUserText_size=draw.textsize(icUser, font=font1)
+    bbox = draw.textbbox((0, 0),icUser, font=font2)
+    icUserText_size = (bbox[2] - bbox[0], bbox[3] - bbox[1])  # (width, height)
     draw.text(((128-icUserText_size[0])/2, 22), icUser, font=font1, fill=255)
 
 
@@ -255,11 +265,16 @@ def startStopOLED(type):
   ### START/STOP DISPLAY FUNCTION
   if type == "Start":
     with canvas(device) as draw:
-      icStartText_size=draw.textsize("Intercom", font=font2)
+      bbox = draw.textbbox((0, 0), "Intercom", font=font2)
+      icStartText_size = (bbox[2] - bbox[0], bbox[3] - bbox[1])  # (width, height)
       draw.text(((128-icStartText_size[0])/2, 5), "Intercom", font=font2, fill=255)
-      icStartText_size=draw.textsize("beltpack", font=font2)
+
+      bbox = draw.textbbox((0, 0), "beltpack", font=font2)
+      icStartText_size = (bbox[2] - bbox[0], bbox[3] - bbox[1])  # (width, height)
       draw.text(((128-icStartText_size[0])/2, 25), "beltpack", font=font2, fill=255)
-      icSoftVerText_size=draw.textsize(icSoftVerText, font=font2)
+
+      bbox = draw.textbbox((0, 0), icSoftVerText, font=font2)
+      icSoftVerText_size = (bbox[2] - bbox[0], bbox[3] - bbox[1])  # (width, height)
       draw.text(((128-icSoftVerText_size[0])/2, 45), icSoftVerText, font=font2, fill=255)
   time.sleep(2)
 
@@ -357,9 +372,9 @@ startStopOLED("Start")
 mqtt.Client.connected_flag=False
 mqtt.Client.error_code = 0
 client = mqtt.Client(client_id=deviceHostName, clean_session=False, userdata=None)
-client.tls_set("/home/pi/intercom/ca.crt")
+# client.tls_set("/home/pi/intercom/ca.crt")
 ### USE INSECURE IF YOUR CERTIFICATE IS SELF SIGNED
-client.tls_insecure_set(True)
+# client.tls_insecure_set(True)
 client.username_pw_set(mqttUser, password=mqttPass)
 client.will_set("media/intercom/status/" + deviceHostName + "/state", "OFFLINE", qos=1, retain=True)
 

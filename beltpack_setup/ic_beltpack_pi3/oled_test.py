@@ -14,11 +14,15 @@ device = ssd1306(serial, rotate=0)
 ### INITIALIZE GPIO AND ACTIVATE PULL DOWN ON INPUTS
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
+v33Ports = (37,38)
+GPIO.setup(v33Ports, GPIO.OUT)
+### SET HIGH (3.3V)
+GPIO.output(v33Ports, 1)
 ### Power Off buttons
 powPort = 37
 GPIO.setup(powPort, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 ### PTT buttons
-pttPorts = (38,40)
+pttPorts = (36,40)
 GPIO.setup(pttPorts, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 lastPTT = [0,0]
